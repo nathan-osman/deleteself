@@ -26,7 +26,13 @@
 
 #include <windows.h>
 
-#define STATUS_SUCCESS       0x00000000L
+#define STATUS_SUCCESS 0x00000000L
+
+#define NtCurrentProcess() ((HANDLE) -1)
+
+enum SECTION_INHERIT {
+	ViewUnmap = 2
+};
 
 typedef struct _UNICODE_STRING {
 	USHORT Length;
@@ -53,6 +59,24 @@ typedef NTSTATUS(__stdcall *_NtCreateSection)(
 	HANDLE             FileHandle
 );
 
+typedef NTSTATUS(__stdcall *_NtMapViewOfSection)(
+	HANDLE          SectionHandle,
+	HANDLE          ProcessHandle,
+	PVOID           *BaseAddress,
+	ULONG_PTR       ZeroBits,
+	SIZE_T          CommitSize,
+	PLARGE_INTEGER  SectionOffset,
+	PSIZE_T         ViewSize,
+	SECTION_INHERIT InheritDisposition,
+	ULONG           AllocationType,
+	ULONG           Win32Protect
+);
+
+typedef NTSTATUS(__stdcall *_NtUnmapViewOfSection)(
+	HANDLE ProcessHandle,
+	PVOID  BaseAddress
+);
+
 typedef NTSTATUS(__stdcall *_NtCreateProcess)(
 	PHANDLE            ProcessHandle,
 	ACCESS_MASK        DesiredAccess,
@@ -64,36 +88,108 @@ typedef NTSTATUS(__stdcall *_NtCreateProcess)(
 	HANDLE             ExceptionPort
 );
 
-const char *MessageTitle = "Title";
-const char *MessageText  = "Message body";
+_NtCreateSection      NtCreateSection;
+_NtMapViewOfSection   NtMapViewOfSection;
+_NtUnmapViewOfSection NtUnmapViewOfSection;
+_NtCreateProcess      NtCreateProcess;
 
-int main(int argc, char **argv)
+/**
+ * Load the entrypoints for required functions
+ * @return true if the entrypoints were loaded
+ */
+bool loadEntrypoints()
 {
-	// Obtain the required entrypoints
-	_NtCreateSection NtCreateSection = (_NtCreateSection) GetProcAddress(GetModuleHandle(TEXT("ntdll.dll")), "NtCreateSection");
-	_NtCreateProcess NtCreateProcess = (_NtCreateProcess) GetProcAddress(GetModuleHandle(TEXT("ntdll.dll")), "NtCreateProcess");
-	if (!NtCreateSection || !NtCreateProcess) {
-		std::cerr << "unable to find entrypoints" << std::endl;
-		return 1;
-	}
+	NtCreateSection      = (_NtCreateSection)      GetProcAddress(GetModuleHandle(TEXT("ntdll.dll")), "NtCreateSection");
+	NtMapViewOfSection   = (_NtMapViewOfSection)   GetProcAddress(GetModuleHandle(TEXT("ntdll.dll")), "NtMapViewOfSection");
+	NtUnmapViewOfSection = (_NtUnmapViewOfSection) GetProcAddress(GetModuleHandle(TEXT("ntdll.dll")), "NtUnmapViewOfSection");
+	NtCreateProcess      = (_NtCreateProcess)      GetProcAddress(GetModuleHandle(TEXT("ntdll.dll")), "NtCreateProcess");
 
-	// Create a section of at least 1024 bytes (plenty for storing data)
-	LARGE_INTEGER rodataSize;
-	rodataSize.QuadPart = 1000;
+	// Return true only if all of the entrypoints were loaded
+	return NtCreateSection && NtMapViewOfSection && NtCreateProcess;
+}
 
-	// Create the .rodata section
-	HANDLE rodataHandle;
-	NTSTATUS status = NtCreateSection(
-		&rodataHandle,
+/**
+ * Create a new section with the specified content
+ * @param sectionHandle  pointer to the handle for the new section
+ * @param sectionContent content for the new section
+ * @param sectionSize    size of the content in bytes
+ * @return STATUS_SUCCESS if the section was created
+ */
+NTSTATUS createSection(
+	PHANDLE    sectionHandle,
+	const VOID *sectionContent,
+	SIZE_T     sectionSize
+)
+{
+	NTSTATUS status;
+
+	// Allocate enough bytes for the section (the size will be increased to the
+	// nearest multiple of PAGE_SIZE automatically)
+	LARGE_INTEGER maximumSize;
+	maximumSize.QuadPart = sectionSize;
+
+	// Attempt to create the section
+	status = NtCreateSection(
+		sectionHandle,
 		SECTION_ALL_ACCESS,
 		NULL,
-		&rodataSize,
-		PAGE_READONLY,
+		&maximumSize,
+		PAGE_READWRITE,
 		SEC_COMMIT,
 		NULL
 	);
 	if (status != STATUS_SUCCESS) {
-		std::cerr << "unable to create section: " << std::hex << status << std::endl;
+		return status;
+	}
+
+	// Map the section in order to copy the content into it
+	PVOID baseAddress = NULL;
+	SIZE_T viewSize = 0;
+	status = NtMapViewOfSection(
+		*sectionHandle,
+		NtCurrentProcess(),
+		&baseAddress,
+		0,
+		sectionSize,
+		NULL,
+		&viewSize,
+		ViewUnmap,
+		0,
+		PAGE_READWRITE
+	);
+	if (status != STATUS_SUCCESS) {
+		return status;
+	}
+
+	// Perform the copy operation
+	CopyMemory(baseAddress, sectionContent, sectionSize);
+
+	// Unmap the section
+	return NtUnmapViewOfSection(
+		NtCurrentProcess(),
+		baseAddress
+	);
+}
+
+int main(int argc, char **argv)
+{
+	NTSTATUS status;
+
+	// Load the entrypoints
+	if (!loadEntrypoints()) {
+		std::cerr << "unable to load entrypoints" << std::endl;
+		return 1;
+	}
+
+	// Create the .rodata section
+	HANDLE rodataSection;
+	status = createSection(
+		&rodataSection,
+		"1234567890",
+		10
+	);
+	if (status != STATUS_SUCCESS) {
+		std::cerr << "unable to create .rodata section: " << std::hex << status << std::endl;
 		return 1;
 	}
 
