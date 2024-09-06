@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 3.2.0)
+cmake_minimum_required(VERSION 3.10)
 project(deleteself)
 
-add_executable(deleteself main.cpp)
+add_subdirectory(src)
+add_subdirectory(stub)
+add_subdirectory(test)
