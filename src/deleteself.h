@@ -25,12 +25,6 @@
 #ifndef DELETESELF_H
 #define DELETESELF_H
 
-#ifdef DELETESELF_EXPORTS
-#  define DELETESELF_API __declspec(dllexport)
-#else
-#  define DELETESELF_API __declspec(dllimport)
-#endif
-
-extern "C" DELETESELF_API int DeleteSelf();
+int DeleteSelf();
 
 #endif // DELETESELF_H
