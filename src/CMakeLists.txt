@@ -11,3 +11,5 @@ set_target_properties(deleteself PROPERTIES
 )
 
 target_include_directories(deleteself PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_dependencies(deleteself stubcpp)

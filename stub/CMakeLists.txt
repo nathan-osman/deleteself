@@ -10,13 +10,32 @@
 # assembly process ourselves
 
 add_custom_command(
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/stub.exe
+    OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/stub.exe
     COMMAND ${NASM} -f bin -o ${CMAKE_CURRENT_BINARY_DIR}/stub.exe ${CMAKE_CURRENT_SOURCE_DIR}/main.asm
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/main.asm
     COMMENT "Assembling stub"
 )
 
-add_custom_target(stub ALL
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/stub.exe
+add_custom_target(stubexe
     SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/main.asm
+)
+
+# Now the assembled EXE must be converted to an array of bytes using a utility
+# program written for this purpose
+
+set(SRC
+    main.cpp
+)
+
+add_executable(stubconv ${SRC})
+
+add_custom_command(
+    OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/stub.cpp
+    COMMAND stubconv ${CMAKE_CURRENT_BINARY_DIR}/stub.exe ${CMAKE_CURRENT_BINARY_DIR}/stub.cpp
+    DEPENDS stubconv ${CMAKE_CURRENT_BINARY_DIR}/stub.exe
+    COMMENT "Converting stub"
+)
+
+add_custom_target(stubcpp
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/stub.cpp
 )
