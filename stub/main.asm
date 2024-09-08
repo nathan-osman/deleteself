@@ -28,6 +28,8 @@
 ; matter; we therefore prefer i686 for maximum compatibility
 BITS 32
 
+ImageBase equ 0x400000
+
 filesig:
 
     ; The signature for EXE files
@@ -78,8 +80,10 @@ opthdr:
     ; Size of the code section
     dd codesize
 
-    ; Size of initialized and uninitialized data
-    dd 0
+    ; Size of initialized data section
+    dd idatasize
+
+    ; Size of uninitialized data section
     dd 0
 
     ; Address of entrypoint
@@ -89,10 +93,10 @@ opthdr:
     dd code
 
     ; Base of data
-    dd idata
+    dd 0
 
     ; Image base
-    dd 0x400000
+    dd ImageBase
 
     ; Section and file alignment
     dd 1
@@ -145,8 +149,7 @@ opthdr:
 ; Data directories
 
     ; Export table virtual address and size
-    dd 0
-    dd 0
+    dd 0, 0
 
     ; Import table virtual address and size
     dd idata
@@ -228,10 +231,10 @@ code:
 start:
 
     push 0
-    push Title
-    push Message
+    push ImageBase + Title
+    push ImageBase + Message
     push 0
-    call [user32_MessageBoxA]
+    call [ImageBase + user32_MessageBoxA]
 
     xor eax, eax
     ret
@@ -280,9 +283,9 @@ MessageBoxA:
     db "MessageBoxA", 0
 
 Title:
-    db "Test Title"
+    db "Test Title", 0
 Message:
-    db "Test Message"
+    db "Test Message", 0
 
 idatasize equ $ - idata
 
