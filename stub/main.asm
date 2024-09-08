@@ -46,105 +46,47 @@ coffhdr:
     ; The signature for PE headers
     dd "PE"
 
-    ; i386
-    dw 0x014C
+; IMAGE_FILE_HEADER
+    dw 0x014C       ; Machine
+    dw 3            ; NumberOfSections
+    dd 0            ; TimeDateStamp
+    dd 0            ; PointerToSymbolTable
+    dd 0            ; NumberOfSymbols
+    dw opthdrsize   ; SizeOfOptionalHeader
+    dw 0x0103       ; Characteristics
 
-    ; Number of sections
-    dw 2
-
-    ; TimeDateStamp
-    dd 0
-
-    ; PointerToSymbolTable and NumberOfSymbolTable (deprecated)
-    dd 0
-    dd 0
-
-    ; Size of the optional header
-    dw opthdrsize
-
-    ; Attributes of the file
-    ; - IMAGE_FILE_RELOCS_STRIPPED
-    ; - IMAGE_FILE_EXECUTABLE_IMAGE
-    ; - IMAGE_FILE_32BIT_MACHINE
-    dw 0x0103
-
+; IMAGE_OPTIONAL_HEADER32
 opthdr:
-
-    ; Identify this as a PE32 executable
-    dw 0x10b
-
-    ; Major / minor linker version
-    db 0
-    db 0
-
-    ; Size of the code section
-    dd codesize
-
-    ; Size of initialized data section
-    dd idatasize
-
-    ; Size of uninitialized data section
-    dd 0
-
-    ; Address of entrypoint
-    dd start
-
-    ; Base of code
-    dd code
-
-    ; Base of data
-    dd 0
-
-    ; Image base
-    dd ImageBase
-
-    ; Section and file alignment
-    dd 1
-    dd 1
-
-    ; Major and minor operating system version
-    dw 4
-    dw 0
-
-    ; Major and minor image version
-    dw 0
-    dw 0
-
-    ; Major and minor subsystem version
-    dw 4
-    dw 0
-
-    ; Reserved - must be zero
-    dd 0
-
-    ; Size of image
-    dd filesize
-
-    ; Size of headers
-    dd hdrsize
-
-    ; Checksum (ignored)
-    dd 0
-
-    ; Subsystem (IMAGE_SUBSYSTEM_WINDOWS_GUI)
-    dw 2
-
-    ; DLL characteristics (IMAGE_DLLCHARACTERISTICS_NO_SEH)
-    dw 0x400
-
-    ; Size of stack reserve & commit
-    dd 0x100000
-    dd 0x1000
-
-    ; Size of heap reserve & commit
-    dd 0x100000
-    dd 0x1000
-
-    ; Loader flags
-    dd 0
-
-    ; Number of RVA and size
-    dd 16
+    dw 0x10b        ; Magic
+    db 0            ; MajorLinkerVersion
+    db 0            ; MinorLinkerVersion
+    dd codesize     ; SizeOfCode
+    dd idatasize    ; SizeOfInitializedData
+    dd datasize     ; SizeOfUninitializedData
+    dd start        ; AddressOfEntryPoint
+    dd code         ; BaseOfCode
+    dd data         ; BaseOfData
+    dd ImageBase    ; ImageBase
+    dd 1            ; SectionAlignment
+    dd 1            ; FileAlignment
+    dw 4            ; MajorOperatingSystemVersion
+    dw 0            ; MinorOperatingSystemVersion
+    dw 0            ; MajorImageVersion
+    dw 0            ; MinorImageVersion
+    dw 4            ; MajorSubsystemVersion
+    dw 0            ; MinorSubsystemVersion
+    dd 0            ; Win32VersionValue
+    dd filesize     ; SizeOfImage
+    dd hdrsize      ; SizeOfHeaders
+    dd 0            ; CheckSum
+    dw 2            ; Subsystem
+    dw 0x400        ; DllCharacteristics
+    dd 0x100000     ; SizeOfStackReserve
+    dd 0x1000       ; SizeOfStackCommit
+    dd 0x100000     ; SizeOfHeapReserve
+    dd 0x1000       ; SizeOfHeapCommit
+    dd 0            ; LoaderFlags
+    dd 16           ; NumberOfRvaAndSizes
 
 ; Data directories
 
@@ -160,67 +102,43 @@ opthdr:
 
 opthdrsize equ $ - opthdr
 
+; IMAGE_SECTION_HEADER[3]
+
 ; .text section
-
-    ; Name of section
-    db ".text", 0, 0, 0
-
-    ; Virtual size
-    dd codesize
-
-    ; Virtual address
-    dd code
-
-    ; Size of raw data
-    dd codesize
-
-    ; Pointer to raw data
-    dd code
-
-    ; Pointer to relocations & line numbers
-    dd 0
-    dd 0
-
-    ; Number of relocations & line numbers
-    dw 0
-    dw 0
-
-    ; Characteristics
-    ; - IMAGE_SCN_CNT_CODE
-    ; - IMAGE_SCN_MEM_EXECUTE
-    ; - IMAGE_SCN_MEM_READ
-    dd 0x60000020
+    db ".text", 0, 0, 0 ; Name
+    dd codesize         ; VirtualSize
+    dd code             ; VirtualAddress
+    dd codesize         ; SizeOfRawData
+    dd code             ; PointerToRawData
+    dd 0                ; PointerToRelocations
+    dd 0                ; PointerToLinenumbers
+    dw 0                ; NumberOfRelocations
+    dw 0                ; NumberOfLinenumbers
+    dd 0x60000020       ; Characteristics
 
 ; .idata section
+    db ".idata", 0, 0   ; Name
+    dd idatasize        ; VirtualSize
+    dd idata            ; VirtualAddress
+    dd idatasize        ; SizeOfRawData
+    dd idata            ; PointerToRawData
+    dd 0                ; PointerToRelocations
+    dd 0                ; PointerToLinenumbers
+    dw 0                ; NumberOfRelocations
+    dw 0                ; NumberOfLinenumbers
+    dd 0xC0000040       ; Characteristics
 
-    ; Name of section
-    db ".idata", 0, 0
-
-    ; Virtual size
-    dd idatasize
-
-    ; Virtual address
-    dd idata
-
-    ; Size of raw data
-    dd idatasize
-
-    ; Pointer to raw data
-    dd idata
-
-    ; Pointer to relocations & line numbers
-    dd 0
-    dd 0
-
-    ; Number of relocations & line numbers
-    dw 0
-    dw 0
-
-    ; Characteristics
-    ; - IMAGE_SCN_CNT_INITIALIZED_DATA
-    ; - IMAGE_SCN_MEM_READ
-    ; - IMAGE_SCN_MEM_WRITE
-    dd 0xC0000040
+; .data section
+    db ".data", 0, 0, 0 ; Name
+    dd datasize         ; VirtualSize
+    dd data             ; VirtualAddress
+    dd datasize         ; SizeOfRawData
+    dd data             ; PointerToRawData
+    dd 0                ; PointerToRelocations
+    dd 0                ; PointerToLinenumbers
+    dw 0                ; NumberOfRelocations
+    dw 0                ; NumberOfLinenumbers
+    dd 0xC0000080       ; Characteristics
 
 hdrsize equ $ - $$
 
@@ -230,13 +148,72 @@ code:
 
 start:
 
-    push 0
-    push ImageBase + Title
-    push ImageBase + Message
-    push 0
-    call [ImageBase + user32_MessageBoxA]
+    ; Load command line arguments
+    call    [ImageBase + GetCommandLineW]
+    mov     [ImageBase + pCmdLine], eax
 
-    xor eax, eax
+    ; Parse command line arguments
+    push    ImageBase + nargs
+    push    dword [ImageBase + pCmdLine]
+    call    [ImageBase + CommandLineToArgvW]
+    mov     [ImageBase + szArgList], eax
+
+    ; Make sure there were three
+    mov     eax, [ImageBase + nargs]
+    cmp     eax, 3
+    je      valid_args
+    mov     eax, 0xa0
+    jmp     exit
+valid_args:
+
+    ; Convert the first argument to long
+    push    10
+    push    0
+    mov     eax, [ImageBase + szArgList]
+    add     eax, 4
+    push    eax
+    call    [ImageBase + wcstol]
+
+    ; Attempt to open the process
+    push    eax
+    push    0
+    push    0x100000
+    call    [ImageBase + OpenProcess]
+    mov     [ImageBase + hProcess], eax
+    cmp     eax, 0
+    jne     process_opened
+    mov     eax, 0x6
+    jmp     exit
+process_opened:
+
+    ; Wait for the process to terminate
+    push    0xffffffff
+    push    dword [ImageBase + hProcess]
+    call    [ImageBase + WaitForSingleObject]
+
+    ; Close the handle
+    push    dword [ImageBase + hProcess]
+    call    [ImageBase + CloseHandle]
+
+    ; Delete the image file
+    mov     eax, [ImageBase + szArgList]
+    add     eax, 8
+    push    eax
+    call    [ImageBase + DeleteFileW]
+    cmp     eax, 0
+    jne     file_deleted
+    mov     eax, 0x2
+    jmp     exit
+file_deleted:
+
+    ; Free szArgList
+    push    dword [ImageBase + szArgList]
+    call    [ImageBase + LocalFree]
+
+    ; Set the return value
+    xor     eax, eax
+
+exit:
     ret
 
 codesize equ $ - code
@@ -245,20 +222,28 @@ align 4
 
 idata:
 
-; Import descriptor for User32.dll
+; IMAGE_IMPORT_DESCRIPTOR[3]
 
-    ; Original first thunk
-    dd user32_ilt
+; kernel32.dll
+    dd 0            ; OriginalFirstThunk
+    dd 0            ; TimeDateStamp
+    dd 0            ; ForwarderChain
+    dd kernel32     ; Name
+    dd kernel32_iat ; FirstThunk
 
-    ; TimeDataStamp and ForwarderChain (not used)
-    dd 0
-    dd 0
+; msvcrt.dll
+    dd 0            ; OriginalFirstThunk
+    dd 0            ; TimeDateStamp
+    dd 0            ; ForwarderChain
+    dd msvcrt       ; Name
+    dd msvcrt_iat   ; FirstThunk
 
-    ; RVA to DLL name
-    dd user32
-
-    ; First thunk
-    dd user32_iat
+; shell32.dll
+    dd 0            ; OriginalFirstThunk
+    dd 0            ; TimeDateStamp
+    dd 0            ; ForwarderChain
+    dd shell32      ; Name
+    dd shell32_iat  ; FirstThunk
 
 ; Blank import descriptor
 
@@ -266,27 +251,75 @@ idata:
 
 ; Import lookup and import address tables
 
-user32:
-    db "USER32.dll", 0
+kernel32:
+    db "KERNEL32.dll", 0
 
-user32_ilt:
-    dd MessageBoxA
+kernel32_iat:
+    CloseHandle             dd kernel32_iat_CloseHandle
+    DeleteFileW             dd kernel32_iat_DeleteFileW
+    GetCommandLineW         dd kernel32_iat_GetCommandLineW
+    LocalFree               dd kernel32_iat_LocalFree
+    OpenProcess             dd kernel32_iat_OpenProcess
+    WaitForSingleObject     dd kernel32_iat_WaitForSingleObject
     dd 0
 
-user32_iat:
-user32_MessageBoxA:
-    dd MessageBoxA
-    dd 0
-
-MessageBoxA:
+kernel32_iat_CloseHandle:
     dw 0
-    db "MessageBoxA", 0
+    db "CloseHandle", 0
 
-Title:
-    db "Test Title", 0
-Message:
-    db "Test Message", 0
+kernel32_iat_DeleteFileW:
+    dw 0
+    db "DeleteFileW", 0
+
+kernel32_iat_GetCommandLineW:
+    dw 0
+    db "GetCommandLineW", 0
+
+kernel32_iat_LocalFree:
+    dw 0
+    db "LocalFree", 0
+
+kernel32_iat_OpenProcess:
+    dw 0
+    db "OpenProcess", 0
+
+kernel32_iat_WaitForSingleObject:
+    dw 0
+    db "WaitForSingleObject", 0
+
+msvcrt:
+    db "MSVCRT.dll", 0
+
+msvcrt_iat:
+    wcstol                  dd msvcrt_iat_wcstol
+    dd 0
+
+msvcrt_iat_wcstol:
+    dw 0
+    db "wcstol", 0
+
+shell32:
+    db "SHELL32.dll", 0
+
+shell32_iat:
+    CommandLineToArgvW      dd shell32_iat_CommandLineToArgvW
+    dd 0
+
+shell32_iat_CommandLineToArgvW:
+    dw 0
+    db "CommandLineToArgvW", 0
 
 idatasize equ $ - idata
+
+align 4
+
+data:
+    pCmdLine                dd 0
+    nargs                   dd 0
+    szArgList               dd 0
+    pid                     dd 0
+    hProcess                dd 0
+
+datasize equ $ - data
 
 filesize equ $ - $$
