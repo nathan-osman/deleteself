@@ -22,27 +22,10 @@
  * IN THE SOFTWARE.
  */
 
-#include <Windows.h>
-#include <winternl.h>
+#ifndef STUB_H
+#define STUB_H
 
-#include "deleteself.h"
-#include "stub.h"
+const unsigned char *stub();
+int stubSize();
 
-typedef NTSTATUS (NTAPI *NtCreateProcessEx_t)(
-    PHANDLE ProcessHandle,
-    ACCESS_MASK DesiredAccess,
-    POBJECT_ATTRIBUTES ObjectAttributes,
-    HANDLE ParentProcess,
-    ULONG Flags,
-    HANDLE SectionHandle,
-    HANDLE DebugPort,
-    HANDLE ExceptionPort,
-    BOOLEAN InJob
-);
-
-int DeleteSelf()
-{
-    //...
-
-    return 0;
-}
+#endif // STUB_H

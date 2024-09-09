@@ -44,7 +44,7 @@ int convert(char *inputFilename, char *outputFilename)
     // Write the preamble
     outputFile << "/** WARNING: this is an auto-generated file **/";
     outputFile << std::endl << std::endl;
-    outputFile << "const char *StubImage = {" << std::endl;
+    outputFile << "const unsigned char StubImage[] = {" << std::endl;
 
     // Write the bytes
     char ch;
@@ -63,7 +63,9 @@ int convert(char *inputFilename, char *outputFilename)
     }
 
     // Complete the file
-    outputFile << std::endl << "};" << std::endl;
+    outputFile << std::endl << "};" << std::endl << std::endl;
+    outputFile << "const unsigned char *stub() { return StubImage; }" << std::endl;
+    outputFile << "int stubSize() { return sizeof(StubImage); }" << std::endl;
 
     inputFile.close();
     outputFile.close();
